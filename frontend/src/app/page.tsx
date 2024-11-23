@@ -10,8 +10,10 @@ declare global {
 
 export default function Home() {
   const [query, setQuery] = useState('');
+  const [feedback, setFeedback] = useState('');
   const [progress, setProgress] = useState<string[]>([]);
   const [responseRequired, setResponseRequired] = useState(false);
+  const [validation, setValidation] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -39,6 +41,11 @@ export default function Home() {
       } else if (data.type === 'input_required') {
         setProgress(prev => [...prev, data.payload]);
         setResponseRequired(true);
+        setValidation(false);
+      } else if (data.type === 'verification_required') {
+        setProgress(prev => [...prev, data.payload]);
+        setResponseRequired(true);
+        setValidation(true);
       } else if (data.type === 'final_result') {
         setProgress(prev => [...prev, `Final result: ${data.payload}`]);
       }
@@ -58,9 +65,9 @@ export default function Home() {
     window.socket = socket;
   };
 
-  const handleResponse = (response: 'yes' | 'no') => {
+  const handleResponse = (response: 'yes' | 'no', feedback: string) => {
     if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-      window.socket.send(JSON.stringify({ response }));
+      window.socket.send(JSON.stringify({"is_ok": response, "feedback": feedback, "validation": validation}));
       setResponseRequired(false);
     } else {
       console.error('WebSocket is not connected');
@@ -88,8 +95,15 @@ export default function Home() {
             {responseRequired && index === progress.length - 1 && (
               <div className={styles.responseButtons}>
                 <p>Does this look like enough to write a report?</p>
-                <button onClick={() => handleResponse('yes')} className={styles.button}>Yes</button>
-                <button onClick={() => handleResponse('no')} className={styles.button}>No</button>
+                <button onClick={() => handleResponse('yes', feedback)} className={styles.button}>Yes</button>
+                <button onClick={() => handleResponse('no', feedback)} className={styles.button}>No</button>
+                <input
+                      type="text"
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      placeholder="Enter your feedback"
+                      className={styles.input}
+                />
               </div>
             )}
           </div>
