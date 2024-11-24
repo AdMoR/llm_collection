@@ -13,7 +13,7 @@ export default function Home() {
   const [feedback, setFeedback] = useState('');
   const [progress, setProgress] = useState<string[]>([]);
   const [responseRequired, setResponseRequired] = useState(false);
-  const [validation, setValidation] = useState(false);
+  const [step, setStep] = useState('');
 
   useEffect(() => {
     return () => {
@@ -38,14 +38,14 @@ export default function Home() {
       console.log('Received:', data);
       if (data.type === 'progress') {
         setProgress(prev => [...prev, data.payload]);
-      } else if (data.type === 'input_required') {
+      } else if (data.type === 'article_review') {
         setProgress(prev => [...prev, data.payload]);
         setResponseRequired(true);
-        setValidation(false);
-      } else if (data.type === 'verification_required') {
+        setStep('article_review');
+      } else if (data.type === 'outline_review') {
         setProgress(prev => [...prev, data.payload]);
         setResponseRequired(true);
-        setValidation(true);
+        setStep('outline_review');
       } else if (data.type === 'final_result') {
         setProgress(prev => [...prev, `Final result: ${data.payload}`]);
       }
@@ -65,9 +65,9 @@ export default function Home() {
     window.socket = socket;
   };
 
-  const handleResponse = (response: 'yes' | 'no', feedback: string) => {
+  const handleResponse = (response: 'yes' | 'no', feedback: string, step: string) => {
     if (window.socket && window.socket.readyState === WebSocket.OPEN) {
-      window.socket.send(JSON.stringify({"is_ok": response, "feedback": feedback, "validation": validation}));
+      window.socket.send(JSON.stringify({"validation": response, "feedback": feedback, "step": step}));
       setResponseRequired(false);
     } else {
       console.error('WebSocket is not connected');
@@ -95,8 +95,8 @@ export default function Home() {
             {responseRequired && index === progress.length - 1 && (
               <div className={styles.responseButtons}>
                 <p>Does this look like enough to write a report?</p>
-                <button onClick={() => handleResponse('yes', feedback)} className={styles.button}>Yes</button>
-                <button onClick={() => handleResponse('no', feedback)} className={styles.button}>No</button>
+                <button onClick={() => handleResponse('yes', feedback, step)} className={styles.button}>Yes</button>
+                <button onClick={() => handleResponse('no', feedback, step)} className={styles.button}>No</button>
                 <input
                       type="text"
                       value={feedback}

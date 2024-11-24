@@ -57,10 +57,11 @@ class Paragraph(BaseModel):
     """A line item in an invoice."""
     subtitle: str = Field(description="The title of this paragraph")
     content: str = Field(description="The content of the paragraph")
-    source: str = Field(description="Exact quote from the source document")
 
-    def render(self):
-        return f"##{self.subtitle} \n>> {self.content} \n[*] {self.source} \n"
+    def render(self, index=None):
+        if index:
+            return f"{index} - {self.subtitle} \n{self.content} \n"
+        return f"##{self.subtitle} \n>> {self.content} \n"
 
 
 class Article(BaseModel):
@@ -68,9 +69,9 @@ class Article(BaseModel):
     paragraphs: list[Paragraph] = Field(description="Paragraphs of the article")
 
     def render(self):
-        paragraphs = '\n'.join(x.render() for x in self.paragraphs)
+        paragraphs = '\n'.join(x.render(i) for i, x in enumerate(self.paragraphs))
         return f"""
-            {self.title}
+            Title: {self.title}
             {paragraphs}
         """
 
@@ -80,58 +81,47 @@ class Outline(BaseModel):
                                                      "they represent what will be discussed in the article")
 
 
+class FactCheck(BaseModel):
+    grounded: bool = Field(description="If the extract is grounded on one of the sources provided")
+    source: str = Field(description="The corresponding source on which extract is based upon")
+
+    def render(self):
+        if self.grounded:
+            return f"Source is {self.source}"
+        else:
+            return "Not sourced"
+
 
 sllm_article = llm.as_structured_llm(Article)
 sllm_outline = llm.as_structured_llm(Outline)
+sllm_fc = llm.as_structured_llm(FactCheck)
 documents = SimpleDirectoryReader(
     input_files=["/home/amor/Documents/code_dw/explorations/on-train-llm-agents-rag/data/paul_graham/paul_graham_essay.txt"],
 ).load_data()
-splitter = SentenceSplitter(chunk_size=512)
+splitter = SentenceSplitter(chunk_size=256)
 nodes = splitter.get_nodes_from_documents(documents)
-retriever = BM25Retriever.from_defaults(
+retriever_top_5 = BM25Retriever.from_defaults(
     nodes=nodes,
-    similarity_top_k=2,
+    similarity_top_k=5,
+    stemmer=Stemmer.Stemmer("english"),
+    language="english",
+)
+retriever_top_1 = BM25Retriever.from_defaults(
+    nodes=nodes,
+    similarity_top_k=1,
     stemmer=Stemmer.Stemmer("english"),
     language="english",
 )
 
 
-
-# this is a dummy workflow to show how to do human in the loop workflows
-# the purpose of the flow is to research a topic, get human review, and then write a report
 class HITLWorkflow(Workflow):
-
-    """
-    @step
-    async def retrieve(
-        self, ctx: Context, ev: StartEvent | RetryEvent
-    ) -> Union[RetrieverEvent, None]:
-        "Entry point for RAG, triggered by a StartEvent with `query`."
-        query = ev.get("query")
-        if not query:
-            return None
-
-        print(f"Query the database with: {query}")
-
-        # store the query in the global context
-        await ctx.set("query", query)
-
-        if ev.index is None:
-            print("Index is empty, load some documents before querying!")
-            return None
-
-        retriever = ev.index.as_retriever(similarity_top_k=2)
-        nodes = retriever.retrieve(query)
-        print(f"Retrieved {len(nodes)} nodes.")
-        return RetrieverEvent(nodes=nodes)
-    """
 
     @step
     async def outline_gen(self, ctx: Context, ev: StartEvent | ResetEvent) -> InputRequiredEvent:
         ctx.write_event_to_stream(ProgressEvent(msg=f"I am doing the outline of  '{ev.query}'"))
         await ctx.set("original_query", ev.query)
 
-        nodes = retriever.retrieve(ev.query)
+        nodes = retriever_top_5.retrieve(ev.query)
         references = '\n'.join(n.text for n in nodes)
 
         ctx.write_event_to_stream(ProgressEvent(msg=f"Found the following docs : {references}"))
@@ -145,7 +135,7 @@ class HITLWorkflow(Workflow):
 
         await ctx.set("outline", rez.raw)
 
-        return InputRequiredEvent(prefix="validation", query=ev.query, payload=rez.text)
+        return InputRequiredEvent(prefix="outline", query=ev.query, payload=rez.text)
 
     # this does the "research", which might involve searching the web or
     # looking up data in a database or our vector store.
@@ -159,13 +149,13 @@ class HITLWorkflow(Workflow):
 
         nodes = list()
         for x in outline.section_subtitles:
-            nodes += retriever.retrieve(x)
+            nodes += retriever_top_1.retrieve(x)
 
-        references = '\n'.join(n.text for n in nodes)
+        references = '\n'.join(n.text[:100] for n in nodes)
         ctx.write_event_to_stream(ProgressEvent(msg=f"Found the following docs : {references}"))
 
         query = f"""
-            Build an article on the following subject {ev.query} based on the source documents below
+            Build an article on the following subject {outline.title} based on the source documents below
             ```
             {references}
             ```
@@ -180,23 +170,53 @@ class HITLWorkflow(Workflow):
                 Correct the answer based on the following feedback :
                 {feedback}
             """
-        resp = sllm_article.complete(query).raw.render()
-        return InputRequiredEvent(prefix="verification", query=ev.query, payload=resp)
+        article: Article = sllm_article.complete(query).raw
+        references = '\n-'.join(n.text for n in nodes)
+        fact_checks = []
+        for i, x in enumerate(article.paragraphs):
+            query = f"""
+                Given this paragraph and sources, define if the paragraph is source from one of the sources.
+                Example 1 : 
+                Paragraph: I live for 10 years in London where I got to learn about the intricate details of the financial system. There I specialized in crypto.
+                source : 
+                - My favorite color is red.
+                - London is always rainy
+                - I work for Morgan Stanley in the City as a data analyst.
+                answer: 
+                grounded : True; quote: I work for Morgan Stanley in the City as a data analyst.
+                 Given this paragraph and sources, define if the paragraph is source from one of the sources.
+                Example 2 : 
+                paragraph: i wrote a bout about medical knowledge 
+                Sources : 
+                - I wrote a book named "1000 recipes about pork"
+                - I am a professional surgeon
+                answer : 
+                grounded: False, quote: None
+                Now do it for the following : 
+                Paragraph : {x.content}
+                Sources : 
+                {references}
+            """
+            fact_checks.append(sllm_fc.complete(query).raw)
+            ctx.write_event_to_stream(ProgressEvent(msg=query))
+            ctx.write_event_to_stream(ProgressEvent(msg=f"Checked paragraph {i} : {fact_checks[-1].render()}"))
+
+        return InputRequiredEvent(prefix="article", query=outline.title, payload=article.render())
     
     # this accepts the HumanResponseEvent, which is either approval or rejection
     # if it's approval, we write the report, otherwise we do more research
     @step
     async def human_review(self, ctx: Context, ev: HumanResponseEvent) -> ReportEvent | RetryEvent | ResetEvent | OutLineEvent:
         ctx.write_event_to_stream(ProgressEvent(msg=f"The human has responded: {ev.response}"))
-        previous = ev.get("payload")
-        if (ev.response == "yes"):
-            if ev.get("validation") is False:
+        previous = ev.response
+        if ev.validation == "yes":
+            if ev.step == "article_review":
                 return ReportEvent(result=f"Here is the research on {await ctx.get('original_query')}")
             else:
                 return OutLineEvent()
         else:
             ctx.write_event_to_stream(ProgressEvent(msg=f"The human has rejected the research, retrying"))
-            if ev.get("validation") is False:
+            if ev.step == "outline_review":
                 return ResetEvent(query=await ctx.get("original_query"),)
             return RetryEvent(query=await ctx.get("original_query"), feedback=ev.feedback, previous=previous)
         

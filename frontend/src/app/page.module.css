@@ -203,6 +203,8 @@ a.secondary {
   background-color: #f0f0f0;
   padding: 20px;
   border-radius: 4px;
+  white-space: pre;
+  text-wrap: wrap;
 }
 
 .message {

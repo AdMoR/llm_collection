@@ -30,24 +30,24 @@ async def query_endpoint(websocket: WebSocket):
             # if we get an InputRequiredEvent, that means the workflow needs human input
             # so we send an event to the frontend that will be handled specially
             if isinstance(event, InputRequiredEvent):
-                if event.prefix == "validation":
+                if event.prefix == "outline":
                     await websocket.send_json({
-                        "type": "input_required",
+                        "type": "outline_review",
                         "payload": event.payload
                     })
                 else:
                     await websocket.send_json({
-                        "type": "validation_required",
+                        "type": "article_review",
                         "payload": event.payload
                     })
                 # we expect the next thing from the socket to be human input
                 response = await websocket.receive_json()
                 # which we send back to the workflow as a HumanResponseEvent
                 print(response)
-                handler.ctx.send_event(HumanResponseEvent(response=response["is_ok"],
+                handler.ctx.send_event(HumanResponseEvent(validation=response["validation"],
                                                           feedback=response["feedback"],
-                                                          validation=response["validation"],
-                                                          payload=event.payload))
+                                                          step=response["step"],
+                                                          response=event.payload))
             elif isinstance(event, ProgressEvent):
                 # the workflow also emits progress events which we send to the frontend
                 await websocket.send_json({
