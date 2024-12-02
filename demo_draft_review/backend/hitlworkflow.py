@@ -96,7 +96,7 @@ sllm_article = llm.as_structured_llm(Article)
 sllm_outline = llm.as_structured_llm(Outline)
 sllm_fc = llm.as_structured_llm(FactCheck)
 documents = SimpleDirectoryReader(
-    input_files=["/home/amor/Documents/code_dw/explorations/on-train-llm-agents-rag/data/paul_graham/paul_graham_essay.txt"],
+    input_files=["../paul_graham_essay.txt"],
 ).load_data()
 splitter = SentenceSplitter(chunk_size=256)
 nodes = splitter.get_nodes_from_documents(documents)
