@@ -3,11 +3,12 @@
 ### Steps to deploy
 
 Install the python env
-- python3 -m venv venv
-- source venv/bin/activate
-- pip install poetry
-- poetry install
-
+```shell
+python3 -m venv venv
+source venv/bin/activate
+pip install poetry
+poetry install
+```
 
 Setup the workflow
 - Create `workflow.py` with a WorkFlow 
