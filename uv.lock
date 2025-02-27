@@ -490,6 +490,15 @@ wheels = [
 ]
 
 [[package]]
+name = "backoff"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/d7/5bbeb12c44d7c4f2fb5b56abce497eb5ed9f34d85701de869acedd602619/backoff-2.2.1.tar.gz", hash = "sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba", size = 17001 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/df/73/b6e24bd22e6720ca8ee9a85a0c4a2971af8497d8f3193fa05390cbd46e09/backoff-2.2.1-py3-none-any.whl", hash = "sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8", size = 15148 },
+]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.13.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2047,6 +2056,53 @@ wheels = [
 ]
 
 [[package]]
+name = "langfuse"
+version = "2.54.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.9'",
+]
+dependencies = [
+    { name = "anyio", version = "4.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "backoff", marker = "python_full_version < '3.9'" },
+    { name = "httpx", marker = "python_full_version < '3.9'" },
+    { name = "idna", marker = "python_full_version < '3.9'" },
+    { name = "packaging", marker = "python_full_version < '3.9'" },
+    { name = "pydantic", marker = "python_full_version < '3.9'" },
+    { name = "wrapt", marker = "python_full_version < '3.9'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9d/3e/e48d76f0e19df3640710427f48dde06e3271c0c012d774b8b4ee4f27561c/langfuse-2.54.1.tar.gz", hash = "sha256:7efc70799740ffa0ac7e04066e0596fb6433e8e501fc850c6a4e7967de6de8a7", size = 136706 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/8c/530f6a4650cede4c8fd8b67a743218388820be3170f6b7b1999657739869/langfuse-2.54.1-py3-none-any.whl", hash = "sha256:1f1261cf763886758c70e192133340ff296169cc0930cde725eee52d467eb661", size = 247880 },
+]
+
+[[package]]
+name = "langfuse"
+version = "2.59.5"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12.4'",
+    "python_full_version >= '3.12' and python_full_version < '3.12.4'",
+    "python_full_version == '3.11.*'",
+    "python_full_version == '3.10.*'",
+    "python_full_version == '3.9.*'",
+]
+dependencies = [
+    { name = "anyio", version = "4.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "backoff", marker = "python_full_version >= '3.9'" },
+    { name = "httpx", marker = "python_full_version >= '3.9'" },
+    { name = "idna", marker = "python_full_version >= '3.9'" },
+    { name = "packaging", marker = "python_full_version >= '3.9'" },
+    { name = "pydantic", marker = "python_full_version >= '3.9'" },
+    { name = "requests", marker = "python_full_version >= '3.9'" },
+    { name = "wrapt", marker = "python_full_version >= '3.9'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/fa/7ba3fd8f19f89a56e1e06b71aa6f49ae277e392731c456431ad76e056f7b/langfuse-2.59.5.tar.gz", hash = "sha256:6ec668059d59c2d9c2e28583d48d0fbd6bbf8afbf3fce9d75489f4dc45d44b2d", size = 144755 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c6/11/be203daddeb8fcd964ab4213cbeab313c00a8b9038ededbeb3ecdad0a75c/langfuse-2.59.5-py3-none-any.whl", hash = "sha256:17fb1b423101bc946e07a893328dba81ecc683d2deb77da69e7f28a9c4752ac2", size = 258578 },
+]
+
+[[package]]
 name = "langsmith"
 version = "0.1.147"
 source = { registry = "https://pypi.org/simple" }
@@ -2818,6 +2874,8 @@ dependencies = [
     { name = "jupyter" },
     { name = "langchain", version = "0.2.17", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "langchain", version = "0.3.19", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "langfuse", version = "2.54.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "langfuse", version = "2.59.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "llama-index", version = "0.11.23", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "llama-index", version = "0.12.16", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "llama-index-llms-azure-openai", version = "0.2.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
@@ -2834,6 +2892,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.36.24" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "langchain", specifier = ">=0.2.17" },
+    { name = "langfuse", specifier = ">=2.54.1" },
     { name = "llama-index", specifier = ">=0.5.9" },
     { name = "llama-index-llms-azure-openai", specifier = ">=0.2.2" },
     { name = "llama-index-retrievers-bm25", specifier = ">=0.4.0" },
