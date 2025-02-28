@@ -38,6 +38,10 @@ services:
 - Run the main server : `poetry run python -m llama_deploy.apiserver`
 - Run the workflow, attached to this server
   - poetry run llamactl deploy deploy_config.yaml
+- request it : llamactl run --deployment MyEchoDeployment --arg message 'Hello from my shell!'
+
+
+
 
 ### Checks in production
 
